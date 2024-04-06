@@ -26,7 +26,7 @@ BLUE2 = (0, 100, 255)
 BLACK = (0, 0, 0)
 
 BLOCK_SIZE = 20
-SPEED = 40
+SPEED = 80
 
 
 class SnakeGameAI:
@@ -39,6 +39,7 @@ class SnakeGameAI:
         pygame.display.set_caption("Snake")
         self.clock = pygame.time.Clock()
         self.reset()
+        self.game_array = np.zeros((self.w // BLOCK_SIZE, self.h // BLOCK_SIZE))
 
     def reset(self):
         # init game state
@@ -55,6 +56,20 @@ class SnakeGameAI:
         self.food = None
         self._place_food()
         self.frame_iteration = 0
+
+    def print_game(self):
+
+        # needs to be set to all zeros after each iteration
+        self.game_array = np.zeros((self.w // BLOCK_SIZE, self.h // BLOCK_SIZE))
+        # draw snake
+        for pt in self.snake:
+            self.game_array[int(pt.x // BLOCK_SIZE), int(pt.y // BLOCK_SIZE)] = 1
+
+        # place food
+        self.game_array[
+            int(self.food.x // BLOCK_SIZE), int(self.food.y // BLOCK_SIZE)
+        ] = 2
+        print(self.game_array)
 
     def _place_food(self):
         x = random.randint(0, (self.w - BLOCK_SIZE) // BLOCK_SIZE) * BLOCK_SIZE
@@ -73,6 +88,8 @@ class SnakeGameAI:
 
         # 2. move
         self._move(action)  # update the head
+        # check if touched a wall
+        self._teleport_wall()
         self.snake.insert(0, self.head)
 
         # 3. check if game over
@@ -96,6 +113,23 @@ class SnakeGameAI:
         self.clock.tick(SPEED)
         # 6. return game over and score
         return reward, game_over, self.score
+
+    def _teleport_wall(self):
+        # hits right wall
+        if self.head.x > self.w - BLOCK_SIZE:
+            self.head = Point(0, self.head.y)
+
+        # hits left wall
+        if self.head.x < 0:
+            self.head = Point(self.w - BLOCK_SIZE, self.head.y)
+
+        # hits top wall
+        if self.head.y < 0:
+            self.head = Point(self.head.x, self.h - BLOCK_SIZE)
+
+        # hits bottom wall
+        if self.head.y > self.h - BLOCK_SIZE:
+            self.head = Point(self.head.x, 0)
 
     def is_collision(self, pt=None):
         if pt is None:

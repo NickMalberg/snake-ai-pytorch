@@ -13,12 +13,17 @@ LR = 0.001
 
 class Agent:
 
-    def __init__(self):
+    def __init__(self, from_file=False):
         self.n_games = 0
         self.epsilon = 0  # randomness
         self.gamma = 0.9  # discount rate
         self.memory = deque(maxlen=MAX_MEMORY)  # popleft()
-        self.model = Linear_QNet(11, 256, 3)
+        self.model = Linear_QNet(11, 300, 3)  # 11, 256, 3
+        self.from_file = from_file
+        if from_file:
+            print("loading model from file")
+            self.model.load()
+            print("model lodaded")
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
     def get_state(self, game):
@@ -84,7 +89,10 @@ class Agent:
 
     def get_action(self, state):
         # random moves: tradeoff exploration / exploitation
-        self.epsilon = 80 - self.n_games
+        if self.from_file:
+            self.epsilon = 0
+        else:
+            self.epsilon = 80 - self.n_games
         final_move = [0, 0, 0]
         if random.randint(0, 200) < self.epsilon:
             move = random.randint(0, 2)
@@ -98,12 +106,12 @@ class Agent:
         return final_move
 
 
-def train():
+def train(from_file=False):
     plot_scores = []
     plot_mean_scores = []
     total_score = 0
     record = 0
-    agent = Agent()
+    agent = Agent(from_file=from_file)
     game = SnakeGameAI()
     while True:
         # get old state
@@ -123,6 +131,9 @@ def train():
         agent.remember(state_old, final_move, reward, state_new, done)
 
         if done:
+            if score > record:
+                # displays the game board, snake and food as an numpy array
+                game.print_game()
             # train long memory, plot result
             game.reset()
             agent.n_games += 1
@@ -131,11 +142,13 @@ def train():
             if score > record:
                 record = score
                 agent.model.save()
-                plot_scores.append(score)
-                total_score += score
-                mean_score = total_score / agent.n_games
-                plot_mean_scores.append(mean_score)
-                plot(plot_scores, plot_mean_scores)
+                print("agend Memory length:", len(agent.memory))
+
+            plot_scores.append(score)
+            total_score += score
+            mean_score = total_score / agent.n_games
+            plot_mean_scores.append(mean_score)
+            plot(plot_scores, plot_mean_scores)
 
             print(
                 "Game",
@@ -151,6 +164,6 @@ def train():
 
 if __name__ == "__main__":
     try:
-        train()
+        train(from_file=True)
     except Exception as e:
         print(e)
