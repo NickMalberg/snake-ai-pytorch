@@ -26,7 +26,7 @@ BLUE2 = (0, 100, 255)
 BLACK = (0, 0, 0)
 
 BLOCK_SIZE = 20
-SPEED = 80
+SPEED = 200
 
 
 class SnakeGameAI:
@@ -57,19 +57,23 @@ class SnakeGameAI:
         self._place_food()
         self.frame_iteration = 0
 
-    def print_game(self):
+    def get_game(self):
 
         # needs to be set to all zeros after each iteration
         self.game_array = np.zeros((self.w // BLOCK_SIZE, self.h // BLOCK_SIZE))
+        # draw head
+        self.game_array[
+            int(self.head.x // BLOCK_SIZE), int(self.head.y // BLOCK_SIZE)
+        ] = 2
         # draw snake
-        for pt in self.snake:
+        for pt in self.snake[1:]:
             self.game_array[int(pt.x // BLOCK_SIZE), int(pt.y // BLOCK_SIZE)] = 1
 
         # place food
         self.game_array[
             int(self.food.x // BLOCK_SIZE), int(self.food.y // BLOCK_SIZE)
-        ] = 2
-        print(self.game_array)
+        ] = 5
+        return self.game_array
 
     def _place_food(self):
         x = random.randint(0, (self.w - BLOCK_SIZE) // BLOCK_SIZE) * BLOCK_SIZE
@@ -101,10 +105,14 @@ class SnakeGameAI:
             return reward, game_over, self.score
 
         # 4. place new food or just move
+        # check if snake length is less then 15
         if self.head == self.food:
             self.score += 1
             reward = 10
             self._place_food()
+            if len(self.snake) >= 15:
+                self.snake.pop()
+
         else:
             self.snake.pop()
 

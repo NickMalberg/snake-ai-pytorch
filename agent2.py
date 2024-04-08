@@ -18,7 +18,7 @@ class Agent:
         self.epsilon = 0  # randomness
         self.gamma = 0.9  # discount rate
         self.memory = deque(maxlen=MAX_MEMORY)  # popleft()
-        self.model = Linear_QNet(12, 400, 3)  # 11, 256, 3
+        self.model = Linear_QNet(24, 400, 3)  # 11, 256, 3
         self.from_file = from_file
         if from_file:
             print("loading model from file")
@@ -27,48 +27,9 @@ class Agent:
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
     def get_state(self, game):
-        head = game.snake[0]
-        point_l = Point(head.x - 20, head.y)
-        point_r = Point(head.x + 20, head.y)
-        point_u = Point(head.x, head.y - 20)
-        point_d = Point(head.x, head.y + 20)
+        tensor_state = torch.tensor(game.get_game())
 
-        dir_l = game.direction == Direction.LEFT
-        dir_r = game.direction == Direction.RIGHT
-        dir_u = game.direction == Direction.UP
-        dir_d = game.direction == Direction.DOWN
-
-        state = [
-            # Danger straight
-            (dir_r and game.is_collision(point_r))
-            or (dir_l and game.is_collision(point_l))
-            or (dir_u and game.is_collision(point_u))
-            or (dir_d and game.is_collision(point_d)),
-            # Danger right
-            (dir_u and game.is_collision(point_r))
-            or (dir_d and game.is_collision(point_l))
-            or (dir_l and game.is_collision(point_u))
-            or (dir_r and game.is_collision(point_d)),
-            # Danger left
-            (dir_d and game.is_collision(point_r))
-            or (dir_u and game.is_collision(point_l))
-            or (dir_r and game.is_collision(point_u))
-            or (dir_l and game.is_collision(point_d)),
-            # Move direction
-            dir_l,
-            dir_r,
-            dir_u,
-            dir_d,
-            # Food location
-            game.food.x < game.head.x,  # food left
-            game.food.x > game.head.x,  # food right
-            game.food.y < game.head.y,  # food up
-            game.food.y > game.head.y,  # food down
-            # len of snake
-            len(game.snake),
-        ]
-
-        return np.array(state, dtype=int)
+        return np.array(tensor_state, dtype=int)
 
     def remember(self, state, action, reward, next_state, done):
         self.memory.append(
@@ -135,9 +96,9 @@ def train(from_file=False):
         agent.remember(state_old, final_move, reward, state_new, done)
 
         if done:
-
-            if score > record:
-                game.get_game()
+            # if score > record:
+            #     # displays the game board, snake and food as an numpy array
+            #     game.print_game()
             # train long memory, plot result
             game.reset()
             agent.n_games += 1
@@ -169,6 +130,6 @@ def train(from_file=False):
 
 if __name__ == "__main__":
     try:
-        train(from_file=True)
+        train(from_file=False)
     except Exception as e:
         print(e)
